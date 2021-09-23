@@ -24,7 +24,7 @@ class Deck:
 
     def build(self, card_number):
         for s in card_suits:
-            for v in card_numbers[card_number]:
+            for v in card_numbers[str(card_number)]:
                 self.cards.append(Card(v, s))
 
     def show(self):
@@ -41,8 +41,9 @@ class Deck:
 
 class Player:
     def __init__(self, player_id):
-        self.id = player_id
+        self.id = str(player_id)
         self.hand = []
+        self.own = []
 
     def draw(self, deck):
         self.hand.append(deck.draw_card())
@@ -51,6 +52,25 @@ class Player:
         for card in self.hand:
             card.show()
         print()
+
+
+class Match:
+    def __init__(self, players, card_number):
+        self.players = []
+        for i in range(players):
+            self.players.append(Player(i+1))
+
+        self.deck = Deck(card_number)
+
+    def initial_draw(self, hand_number):
+        for j in range(hand_number):
+            for player in self.players:
+                player.draw(self.deck)
+
+    def show_game(self):
+        for player in self.players:
+            print("Player " + player.id)
+            player.show_hand()
 
 
 # c = Card("J", "Diamonds")
@@ -67,7 +87,11 @@ class Player:
 # print()
 # d.show()
 
-d = Deck('52')
-p = Player(1)
-p.draw(d)
-p.show_hand()
+# d = Deck('52')
+# p = Player(1)
+# p.draw(d)
+# p.show_hand()
+
+m = Match(4, 52)
+m.initial_draw(3)
+m.show_game()
