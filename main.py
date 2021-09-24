@@ -84,10 +84,8 @@ class Match:
             if player.hand:
                 print("Player " + player.id)
                 player.show_hand(self.deck)
-                return
             else:
                 print(f"Player {player.id}: {int(player.score)}")
-        print()
 
 
 class Tressette(Match):
@@ -114,6 +112,7 @@ class Tressette(Match):
         for player in self.players:
             player.own = []
             player.hand = []
+            player.score = self.initial_score
 
         self.deck.reset(self.card_number)
 
@@ -177,17 +176,14 @@ class Tressette(Match):
             self.play_turn()
             self.show_game()
 
-        game_over = 0
         for player in self.players:
             player.match_score += int(player.score + 0.1)
-            player.score = self.initial_score
-            game_over += (player.match_score >= self.max_match_score)
 
-        return game_over
+        return (self.players[0].match_score != self.players[1].match_score) and (self.players[0].match_score >= self.max_match_score or self.players[1].match_score >= self.max_match_score)
         # self.reset_game()
 
     def show_final_result(self):
-        print("Game over")
+        print("\nGame over")
         for player in self.players:
             print(f"Player {player.id}: {int(player.match_score)}")
         self.players.sort(key=lambda x: x.match_score, reverse=True)
