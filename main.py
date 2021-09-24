@@ -196,28 +196,6 @@ class Tressette(Match):
         self.show_final_result()
 
 
-# c = Card("J", "Diamonds")
-# c.show()
-
-# d = Deck('40')
-# d.show()
-# c1 = d.draw_card()
-# c1.show()
-# print()
-# c2 = d.draw_card()
-# c2.show()
-# print()
-# d.show()
-
-# d = Deck('52')
-# p = Player(1)
-# p.draw(d)
-# p.show_hand()
-
-# m = Match(4, 52)
-# m.initial_draw(3)
-# m.show_game()
-
 t = Tressette()
 t.show_game()
 t.simulate_match()
