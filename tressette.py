@@ -1,17 +1,20 @@
 from card import TressetteDeck
 from player import Player
+import pickle as pkl
+import os
 
 import constants as c
+import utilities as u
 
 
 class Tressette(object):
-    def __init__(self, deck=TressetteDeck(), draw=False):
+    def __init__(self):
         self.players = [
             Player(c.P1),
             Player(c.P2)
         ]
 
-        self.deck = deck
+        self.deck = TressetteDeck()
         self.player_turn = 0
         self.player_set_turn = 0
 
@@ -20,14 +23,6 @@ class Tressette(object):
         for player in self.players:
             for i in range(c.STARTING_HAND):
                 player.draw(self.deck)
-
-
-    def select_winning_card(self, p1_card, p2_card):
-        if p1_card.suit == p2_card.suit:
-            if c.RANKS.index(p1_card.rank) < c.RANKS.index(p2_card.rank):
-                return p2_card
-        
-        return p1_card
 
 
     def ack_turn(self, p1_card, p2_card):
@@ -59,15 +54,16 @@ class Tressette(object):
         return played_card
 
     
-    def draw(self):
+    def draw(self, verbose=False):
         p1 = self.players[self.player_turn]
         p2 = self.players[(self.player_turn+1)%2]
         
         p1_card = p1.draw(self.deck)
         p2_card = p2.draw(self.deck)
         
-        print(f"Player {p1.name} drew {p1_card}")
-        print(f"Player {p2.name} drew {p2_card}")
+        if verbose:
+            print(f"Player {p1.name} drew {p1_card}")
+            print(f"Player {p2.name} drew {p2_card}")
         
         p1.add_opponent_card(p2_card)
         p2.add_opponent_card(p1_card)
@@ -115,6 +111,15 @@ class Tressette(object):
 
     def run(self, p1_hand, p2_hand, p1_score, p2_score, tabled_card=None, verbose=0):
         if not tabled_card:
+            path = u.path_from_hands(p1_hand, p2_hand)
+            filename = f"{c.TEMP_DIR}/{path}.pkl"
+
+            if os.path.exists(filename):
+                with open(filename, "rb") as f:
+                    best_scores, best_sequence = pkl.load(f)
+
+                    return best_scores, best_sequence
+
             best_scores = [0,0]
             best_sequence = None
             for card in p1_hand:
@@ -122,79 +127,94 @@ class Tressette(object):
                 p2_copy = p2_hand.copy()
                 p1_score_copy = p1_score
                 p2_score_copy = p2_score
+                
                 if verbose:
-                    print(f"p1_hand: {p1_hand}")
-                    print(f"p2_hand: {p2_hand}")
-                    print(f"p1_score: {p1_score}")
-                    print(f"p2_score: {p2_score}")
+                    print(f"p1_hand: {p1_hand}; p2_hand: {p2_hand}")
+                    print(f"Score: {u.fraction_of_3(p1_score)} {u.fraction_of_3(p2_score)}")
                     print(f"Playing {card}")
+
                 p1_copy.remove(card)
-                scores, sequence = self.run(p1_copy, p2_copy, p1_score_copy, p2_score_copy, card)
-                if verbose:
-                    print(f"Scores: {scores}")
-                if scores[0] >= best_scores[0]:
-                    if verbose:
-                        print(f"New best scores: {scores} with card {card}")
-                        print(f"Previous best scores: {best_scores} with card {best_sequence}")
+                scores, sequence = self.run(p1_copy, p2_copy, p1_score_copy, p2_score_copy, card, verbose)
+
+                if scores[0] > best_scores[0]:
+                    # if verbose:
+                    #     print(f"New best scores: {scores} with card {card}")
+                    #     print(f"Previous best scores: {best_scores} with card {best_sequence}")
                     best_scores = scores
                     best_sequence = sequence
                     best_sequence.insert(0, card)
 
             if verbose:
-                print(f"Returning best scores: {best_scores} and best sequence: {best_sequence}")
-                print()
-                print()
+                # print(f"Returning best scores: {best_scores} and best sequence: {best_sequence}")
+                # print()
+                # print()
+                print(f"Score: {u.fraction_of_3(best_scores[0])} {u.fraction_of_3(best_scores[1])} with ")
+                u.print_sequence(best_sequence)
+            
+            # save best scores and best sequence to file using pickle
+            with open(filename, "wb") as f:
+                pkl.dump((best_scores, best_sequence), f)
+                      
             return best_scores, best_sequence
                 
         else:
+            path = u.path_from_hands(p1_hand, p2_hand)
+            filename = f"{c.TEMP_DIR}/{path}.pkl"
+            if os.path.exists(filename):
+                with open(filename, "rb") as f:
+                    best_scores, best_sequence = pkl.load(f)
+
+                    return best_scores, best_sequence
+
             best_scores = [0,0]
             best_sequence = None
             for card in p2_hand:
-                p1_copy = p1_hand.copy()
-                p2_copy = p2_hand.copy()
-                p1_score_copy = p1_score
-                p2_score_copy = p2_score
-                if verbose:
-                    print(f"p1_hand: {p1_hand}")
-                    print(f"p2_hand: {p2_hand}")
-                    print(f"Tabled card: {tabled_card}")
-                    print(f"p1_score: {p1_score}")
-                    print(f"p2_score: {p2_score}")
-                    print(f"Playing {card}")
-                p2_copy.remove(card)
-                winning_card = self.select_winning_card(tabled_card, card)
-                if verbose:
-                    print(f"Table: {tabled_card} {card}")
-                    print(f"Winner: {winning_card}")
-                if winning_card == card:
-                    p2_score_copy += card.value + tabled_card.value
-                else:
-                    p1_score_copy += card.value + tabled_card.value
-
-                if len(p1_hand) == 0:
-                    p1_score_copy += winning_card != card
-                    p2_score_copy += winning_card == card
-                    return [p1_score_copy, p2_score_copy], [card]
-                
-                if winning_card != card:
-                    scores, sequence = self.run(p1_copy, p2_copy, p1_score_copy, p2_score_copy)
-                else:
-                    scores, sequence = self.run(p2_copy, p1_copy, p2_score_copy, p1_score_copy)
-                    # invert scores
-                    scores = [scores[1], scores[0]]
-                
-                if scores[1] >= best_scores[1]:
+                if u.is_allowed(tabled_card, card, p2_hand):
+                    print(f"Allowed: {tabled_card} {card} with hand {p2_hand}")
+                    p1_copy = p1_hand.copy()
+                    p2_copy = p2_hand.copy()
+                    p1_score_copy = p1_score
+                    p2_score_copy = p2_score
+                    
                     if verbose:
-                        print(f"New best scores: {scores} with card {card}")
-                        print(f"Previous best scores: {best_scores} with card {sequence}")
-                    best_scores = scores
-                    best_sequence = sequence
-                    best_sequence.insert(0, card)
+                        print(f"p1_hand: {p1_hand}; p2_hand: {p2_hand}")
+                        print(f"Tabled card: {tabled_card}")
+                        print(f"Score: {u.fraction_of_3(p1_score)} {u.fraction_of_3(p2_score)}")
+                        print(f"Playing {card}")
+                    
+                    p2_copy.remove(card)
+                    winning_card = u.select_winning_card(tabled_card, card)
+                    
+                    if verbose:
+                        print(f"Table: {tabled_card} {card}; winner: {winning_card}")
+                    
+                    if winning_card == card:
+                        p2_score_copy += card.value + tabled_card.value
+                    else:
+                        p1_score_copy += card.value + tabled_card.value
 
-            if verbose:
-                print(f"Returning best scores: {best_scores} and best sequence: {best_sequence}")
-                print()
-                print()
-            
+                    if len(p1_hand) == 0:
+                        p1_score_copy += winning_card != card
+                        p2_score_copy += winning_card == card
+                        return [p1_score_copy, p2_score_copy], [card]
+                    
+                    if winning_card != card:
+                        scores, sequence = self.run(p1_copy, p2_copy, p1_score_copy, p2_score_copy, verbose=verbose)
+                    else:
+                        scores, sequence = self.run(p2_copy, p1_copy, p2_score_copy, p1_score_copy, verbose=verbose)
+                        # invert scores
+                        scores = [scores[1], scores[0]]
+                    
+                    if scores[1] > best_scores[1]:
+                        # if verbose:
+                        #     print(f"New best scores: {scores} with card {card}")
+                        #     print(f"Previous best scores: {best_scores} with card {sequence}")
+                        best_scores = scores
+                        best_sequence = sequence
+                        best_sequence.insert(0, card)
+
+            with open(filename, "wb") as f:
+                pkl.dump((best_scores, best_sequence), f)
+
             return best_scores, best_sequence
                 

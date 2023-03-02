@@ -41,3 +41,7 @@ PLAYER_HAND = 2
 OPPONENT_TAKEN = 3
 # 4: taken by the player
 PLAYER_TAKEN = 4
+
+PLACEHOLDER = "  "
+
+TEMP_DIR = "temp"
