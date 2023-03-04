@@ -24,16 +24,16 @@ def select_winning_card(p1_card, p2_card):
 
 
 def print_sequence(sequence):
-    p1_sequence = [sequence[0], c.PLACEHOLDER]
-    p2_sequence = [c.PLACEHOLDER, sequence[1]]
+    p1_sequence = [sequence[0][0], c.PLACEHOLDER]
+    p2_sequence = [c.PLACEHOLDER, sequence[1][0]]
     starter = 1
     for i in range(1, int(len(sequence)/2)):
-        p1_card = sequence[2*(i-1)]
-        p2_card = sequence[2*(i-1)+1]
-        n1_card = sequence[2*(i-1)+2]
-        n2_card = sequence[2*(i-1)+3]
+        p1_card = sequence[2*(i-1)][0]
+        p2_card = sequence[2*(i-1)+1][0]
+        n1_card = sequence[2*(i-1)+2][0]
+        n2_card = sequence[2*(i-1)+3][0]
         winner = select_winning_card(p1_card, p2_card)
-        print(f"Winning card: {winner}")
+        # print(f"Winning card: {winner}")
         if winner == p1_card and starter == 1 or winner == p2_card and starter == 2:
             p1_sequence.append(n1_card)
             p2_sequence.append(c.PLACEHOLDER)
@@ -60,8 +60,10 @@ def is_allowed(tabled_card, card, hand):
     if card.suit != tabled_card.suit:
         for c in hand:
             if c.suit == tabled_card.suit:
+                # print(f"Not allowed: {tabled_card} {card} with hand {hand} because of {c}")
                 return False
-    
+
+    # print(f"Allowed: {tabled_card} {card} with hand {hand}")
     return True
 
 
